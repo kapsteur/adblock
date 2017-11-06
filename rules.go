@@ -309,6 +309,10 @@ func (rules *Rules) IsBlackListed(u string, options map[string]interface{}) bool
 	return rules.matches(u, options, rules.blacklistRe, rules.blacklistRequireDomain, rules.blacklistWithOptions)
 }
 
+func (rules *Rules) IsBlackListedInfos(u string, options map[string]interface{}) (string, bool) {
+	return rules.matchesInfos(u, options, rules.blacklistRe, rules.blacklistRequireDomain, rules.blacklistWithOptions)
+}
+
 func (rules *Rules) matches(u string, options map[string]interface{}, generalRe *re.Regexp, domainRequiredRules map[string][]*Rule, rulesWithOptions []*Rule) bool {
 	if generalRe != nil && generalRe.MatchString(u) {
 		return true
@@ -338,6 +342,38 @@ func (rules *Rules) matches(u string, options map[string]interface{}, generalRe 
 	}
 
 	return false
+}
+
+func (rules *Rules) matchesInfos(u string, options map[string]interface{}, generalRe *re.Regexp, domainRequiredRules map[string][]*Rule, rulesWithOptions []*Rule) (string, bool) {
+
+	if generalRe != nil && generalRe.MatchString(u) {
+		return generalRe.String(), true
+	}
+
+	rls := []*Rule{}
+	isrcDomain, ok := options["domain"]
+	srcDomain, ok2 := isrcDomain.(string)
+	if ok && ok2 && len(domainRequiredRules) > 0 {
+		for _, domain := range DomainVariants(srcDomain) {
+			if vs, ok := domainRequiredRules[domain]; ok {
+				rls = append(rls, vs...)
+			}
+		}
+	}
+
+	rls = append(rls, rulesWithOptions...)
+
+	if !rules.opt.CheckUnsupportedRules {
+		for _, rule := range rls {
+			if rule.MatchingSupported(options, true) {
+				if rule.MatchURL(u, options) {
+					return rule.Raw(), true
+				}
+			}
+		}
+	}
+
+	return "", false
 }
 
 func (rules *Rules) BlackList() []*Rule {
