@@ -301,8 +301,22 @@ func (rules *Rules) ShouldBlock(u string, options map[string]interface{}) bool {
 	return false
 }
 
+func (rules *Rules) ShouldBlockInfos(u string, options map[string]interface{}) (string, bool) {
+	if r, b := rules.IsWhiteListedInfos(u, options); b {
+		return r, false
+	}
+	if r, b := rules.IsBlackListedInfos(u, options); b {
+		return r, true
+	}
+	return "", false
+}
+
 func (rules *Rules) IsWhiteListed(u string, options map[string]interface{}) bool {
 	return rules.matches(u, options, rules.whitelistRe, rules.whitelistRequireDomain, rules.whitelistWithOptions)
+}
+
+func (rules *Rules) IsWhiteListedInfos(u string, options map[string]interface{}) (string, bool) {
+	return rules.matchesInfos(u, options, rules.whitelistRe, rules.whitelistRequireDomain, rules.whitelistWithOptions)
 }
 
 func (rules *Rules) IsBlackListed(u string, options map[string]interface{}) bool {
